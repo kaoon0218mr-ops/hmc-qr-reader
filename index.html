@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <title>ひまわりクラブ QR受付</title>
+
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #fffaf0;
+      color: #333;
+      font-family: sans-serif;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin-bottom: 8px;
+      color: #e48b00;
+      font-size: 26px;
+    }
+
+    .guide {
+      margin-bottom: 20px;
+      font-size: 18px;
+      line-height: 1.6;
+    }
+
+    #startButton {
+      width: 100%;
+      padding: 18px;
+      border: none;
+      border-radius: 12px;
+      background: #f6a800;
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #reader {
+      display: none;
+      margin-top: 18px;
+      overflow: hidden;
+      border: 3px solid #f6a800;
+      border-radius: 12px;
+      background: white;
+    }
+
+    #message {
+      margin-top: 16px;
+      font-size: 17px;
+      font-weight: bold;
+    }
+
+    .error {
+      color: #d93025;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>ひまわりクラブ受付</h1>
+
+    <div class="guide">
+      ボタンを押してから<br>
+      会員証のQRコードをカメラにかざしてください
+    </div>
+
+    <button id="startButton" type="button" onclick="startScanner()">
+      QRコード受付をはじめる
+    </button>
+
+    <div id="reader"></div>
+    <div id="message"></div>
+  </div>
+
+  <script>
+    const receptionUrl =
+      'https://script.google.com/macros/s/AKfycbygveXo_rW225Vg1IkBeDd2WkP7xXMGnbcc1mSMS-6u9Rq61EzHzle16ajqmMnwsgnB3w/exec';
+
+    let scanner = null;
+    let scanned = false;
+
+    function startScanner() {
+      const button = document.getElementById('startButton');
+      const reader = document.getElementById('reader');
+      const message = document.getElementById('message');
+
+      button.style.display = 'none';
+      reader.style.display = 'block';
+      message.className = '';
+      message.textContent = 'QRコードをカメラにかざしてください';
+
+      scanner = new Html5Qrcode('reader');
+
+      scanner.start(
+        { facingMode: 'environment' },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 }
+        },
+        onScanSuccess,
+        function () {
+          // 読み取り待機中は何もしません
+        }
+      ).catch(function () {
+        reader.style.display = 'none';
+        button.style.display = 'block';
+        message.className = 'error';
+        message.textContent =
+          'カメラを起動できませんでした。カメラの使用を許可してください。';
+      });
+    }
+
+    function onScanSuccess(decodedText) {
+      if (scanned) return;
+      scanned = true;
+
+      let memberNo = '';
+
+      try {
+        const qrUrl = new URL(decodedText);
+        memberNo = qrUrl.searchParams.get('member') || '';
+      } catch (error) {
+        memberNo = decodedText;
+      }
+
+      memberNo = memberNo.trim().toUpperCase();
+
+      if (!/^HMC\d{3,}$/.test(memberNo)) {
+        scanned = false;
+        document.getElementById('message').className = 'error';
+        document.getElementById('message').textContent =
+          'ひまわりクラブの会員証ではありません。';
+        return;
+      }
+
+      document.getElementById('message').className = '';
+      document.getElementById('message').textContent =
+        '会員情報を表示しています…';
+
+      scanner.stop().then(function () {
+        location.href =
+          receptionUrl + '?member=' + encodeURIComponent(memberNo);
+      });
+    }
+  </script>
+</body>
+</html>
