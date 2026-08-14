@@ -159,11 +159,14 @@
     window.addEventListener('load', function () {
   const params = new URLSearchParams(window.location.search);
 
-  if (params.get('auto') === '1') {
-    setTimeout(function () {
-      startScanner();
-    }, 500);
-  }
+if (params.get('auto') === '1') {
+  document.querySelector('.guide').textContent =
+    '会員証のQRコードをカメラにかざしてください';
+
+  setTimeout(function () {
+    startScanner();
+  }, 500);
+}
 });
   </script>
 </body>
